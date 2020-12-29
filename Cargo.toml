@@ -1,0 +1,8 @@
+[package]
+name = "rust-dungeon-crawler"
+version = "0.1.0"
+authors = ["Willie Scholtz <williescholtz@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+bracket-lib = "~0.8.1"
