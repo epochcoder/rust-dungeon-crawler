@@ -3,9 +3,16 @@ use crate::prelude::*;
 const DEFAULT_NUM_ROOMS: usize = 10;
 const DEFAULT_ROOM_SIZE: i32 = 10;
 
+#[derive(Clone)]
+pub enum GameMode {
+    Play, Menu, Quit, Restart
+}
+
+#[derive(Clone)]
 pub struct GameOptions {
     pub max_rooms: usize,
-    pub room_size: i32
+    pub room_size: i32,
+    pub mode: GameMode,
 }
 
 impl GameOptions {
@@ -13,6 +20,7 @@ impl GameOptions {
         Self {
             max_rooms: DEFAULT_NUM_ROOMS,
             room_size: DEFAULT_ROOM_SIZE,
+            mode: GameMode::Play
         }
     }
 

@@ -9,7 +9,6 @@ pub fn player_input(
     #[resource] key: &Option<VirtualKeyCode>, // TODO: how to do multiple keys?
     #[resource] camera: &mut Camera,
 ) {
-
     if let Some(key) = key {
         let delta = match key {
             VirtualKeyCode::Up => Point::new(0, -1),

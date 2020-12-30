@@ -23,7 +23,7 @@ pub fn spawn_monster(
         Enemy,
         pos,
         Render {
-            color: ColorPair::new(RED, BLACK),
+            color: ColorPair::new(WHITE, BLACK),
             glyph: match rng.range(0, 4) {
                 0 => to_cp437('E'), // ettin
                 1 => to_cp437('O'), // ogre

@@ -38,10 +38,6 @@ use crate::prelude::*;
 // crate:: accesses the root of the tree
 // super:: accesses the parent module (module immediately above current module)
 
-enum GameMode {
-    Play, Menu, Quit, Restart
-}
-
 struct State {
     ecs: World,
     resources: Resources,
@@ -52,58 +48,49 @@ struct State {
 impl State {
     /// creates a new empty state for our game
     fn new() -> Self {
-        let options = GameOptions::new();
+        Self {
+            ecs: World::default(),
+            resources: Resources::default(),
+            systems: build_scheduler(),
+            options: GameOptions::new()
+        }
+    }
 
-        let mut ecs = World::default();
+    fn restart(&mut self) {
+        self.ecs.clear();
 
-        let mut resources = Resources::default();
         let mut rng = RandomNumberGenerator::new();
-        let mut map_builder = MapBuilder::build(&mut rng, &options);
         let mut camera = Camera::new();
+        let map_builder = MapBuilder::build(&mut rng, &self.options);
 
         // since we only have one player, we can add them here
-        spawn_player(&mut ecs, &mut camera, map_builder.player_start);
+        spawn_player(&mut self.ecs, &mut camera, map_builder.player_start);
 
         // create monsters
         map_builder.rooms.iter()
             .skip(1) // we are in the first room
             .map(|r| r.center())// put monster in the center
-            .for_each(|pos| spawner::spawn_monster(&mut ecs, &mut rng, pos));
+            .for_each(|pos| spawner::spawn_monster(&mut self.ecs, &mut rng, pos));
 
-        resources.insert(map_builder.map);
-        resources.insert(camera);
+        self.options.mode = GameMode::Play;
+        self.resources.insert(map_builder.map);
+        self.resources.insert(camera);
+    }
 
-        Self {
-            ecs,
-            resources,
-            systems: build_scheduler(),
-            options
+    fn handle_main_input(&mut self, ctx: &mut BTerm) {
+        if let Some(key) = ctx.key {
+            match key {
+                VirtualKeyCode::R | VirtualKeyCode::S => self.options.mode = GameMode::Restart,
+                VirtualKeyCode::Q => self.options.mode = GameMode::Quit,
+                VirtualKeyCode::M => self.options.mode = GameMode::Menu,
+                VirtualKeyCode::P => self.options.mode = GameMode::Play,
+                _ => {}
+            }
         }
     }
 
-    // fn restart(&mut self) {
-    //     let mut rng = RandomNumberGenerator::new();
-    //     let map_builder = MapBuilder::build(&mut rng, &self.options);
-    //
-    //     self.map = map_builder.map;
-    //     self.camera = Camera::new(map_builder.player_start);
-    //     self.mode = GameMode::Play;
-    // }
-
-    // fn handle_input(&mut self, ctx: &mut BTerm) {
-    //     if let Some(key) = ctx.key {
-    //         match key {
-    //             VirtualKeyCode::R => self.mode = GameMode::Restart,
-    //             VirtualKeyCode::Q => self.mode = GameMode::Quit,
-    //             VirtualKeyCode::M => self.mode = GameMode::Menu,
-    //             VirtualKeyCode::P => self.mode = GameMode::Play,
-    //             _ => {}
-    //         }
-    //     }
-    // }
-
     fn show_menu(&mut self, ctx: &mut BTerm) {
-        ctx.set_active_console(0);
+        ctx.set_active_console(1);
         ctx.print_centered(5, "Rust Dungeon Crawler");
         ctx.print(10, 7, "[P] Play / Resume");
         ctx.print(10, 8, "[R] Save / Restart");
@@ -114,6 +101,13 @@ impl State {
 
         self.options.handle_input(ctx);
     }
+
+    fn run_systems(&mut self, ctx: &mut BTerm) {
+        self.systems.execute(&mut self.ecs, &mut self.resources);
+
+        render_draw_buffer(ctx)
+            .expect("Could not render draw buffer");
+    }
 }
 
 impl GameState for State {
@@ -123,12 +117,21 @@ impl GameState for State {
         ctx.set_active_console(1);
         ctx.cls();
 
+        // handle main game input
+        self.handle_main_input(ctx);
+
         // add current key resource (replaces any previous resource of same type)
         self.resources.insert(ctx.key);
-        self.systems.execute(&mut self.ecs, &mut self.resources);
+        // clone a set of options for our systems
+        self.resources.insert(self.options.clone());
 
-        render_draw_buffer(ctx)
-            .expect("Could not render draw buffer");
+        match self.options.mode {
+            GameMode::Play => self.run_systems(ctx),
+            // TODO: add menu as system
+            GameMode::Menu => self.show_menu(ctx),
+            GameMode::Quit => ctx.quitting = true,
+            GameMode::Restart => self.restart()
+        }
     }
 }
 
@@ -144,8 +147,8 @@ fn main() -> BError {
         .with_simple_console_no_bg(DISPLAY_WIDTH, DISPLAY_HEIGHT, font)
         .build()?;
 
-    let state = State::new();
-    //state.restart();
+    let mut state = State::new();
+    state.restart();
 
     main_loop(context, state)
 }
