@@ -127,7 +127,7 @@ impl GameState for State {
 
         match self.options.mode {
             GameMode::Play => self.run_systems(ctx),
-            // TODO: add menu as system
+            // TODO: add menu as system or somehow run with legion
             GameMode::Menu => self.show_menu(ctx),
             GameMode::Quit => ctx.quitting = true,
             GameMode::Restart => self.restart()
