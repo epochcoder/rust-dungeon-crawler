@@ -1,24 +1,35 @@
 // this links the map module to the main project
 mod map;
 mod map_builder;
-mod player;
 mod options;
+mod components;
+mod spawner;
 mod camera;
+mod systems;
 
 // this module is convenient for library users and includes most necessary things
 pub mod prelude {
     // re-export bracket lib
     pub use bracket_lib::prelude::*;
+
+    // re-export legion
+    pub use legion::*;
+    pub use legion::world::SubWorld;
+    pub use legion::systems::CommandBuffer;
+
     pub const SCREEN_WIDTH: i32 = 80;
     pub const SCREEN_HEIGHT: i32 = 50;
     pub const DISPLAY_WIDTH: i32 = SCREEN_WIDTH / 2;
     pub const DISPLAY_HEIGHT: i32 = SCREEN_HEIGHT / 2;
+
     // re-export map/player as a public modules
     pub use crate::map::*;
-    pub use crate::player::*;
     pub use crate::map_builder::*;
     pub use crate::camera::*;
     pub use crate::options::*;
+    pub use crate::components::*;
+    pub use crate::systems::*;
+    pub use crate::spawner::*;
 }
 
 // use our own prelude to make it available in main
@@ -32,51 +43,64 @@ enum GameMode {
 }
 
 struct State {
-    map: Map,
-    mode: GameMode,
-    options: GameOptions,
-    player: Player,
-    camera: Camera,
+    ecs: World,
+    resources: Resources,
+    systems: Schedule,
+    options: GameOptions
 }
 
 impl State {
+    /// creates a new empty state for our game
     fn new() -> Self {
-        Self {
-            map: Map::new(),
-            mode: GameMode::Menu,
-            options: GameOptions::new(),
-            player: Player::new(Point::zero()),
-            camera: Camera::new(Point::zero())
-        }
-    }
+        let options = GameOptions::new();
 
-    fn play_game(&mut self, ctx: &mut BTerm) {
-        self.player.update(ctx, &self.map, &mut self.camera);
-        self.map.render(ctx, &self.camera);
-        self.player.render(ctx, &self.camera);
-    }
+        let mut ecs = World::default();
 
-    fn restart(&mut self) {
+        let mut resources = Resources::default();
         let mut rng = RandomNumberGenerator::new();
-        let map_builder = MapBuilder::build(&mut rng, &self.options);
+        let mut map_builder = MapBuilder::build(&mut rng, &options);
+        let mut camera = Camera::new();
 
-        self.map = map_builder.map;
-        self.player = Player::new(map_builder.player_start);
-        self.camera = Camera::new(map_builder.player_start);
-        self.mode = GameMode::Play;
-    }
+        // since we only have one player, we can add them here
+        spawn_player(&mut ecs, &mut camera, map_builder.player_start);
 
-    fn handle_input(&mut self, ctx: &mut BTerm) {
-        if let Some(key) = ctx.key {
-            match key {
-                VirtualKeyCode::R => self.mode = GameMode::Restart,
-                VirtualKeyCode::Q => self.mode = GameMode::Quit,
-                VirtualKeyCode::M => self.mode = GameMode::Menu,
-                VirtualKeyCode::P => self.mode = GameMode::Play,
-                _ => {}
-            }
+        // create monsters
+        map_builder.rooms.iter()
+            .skip(1) // we are in the first room
+            .map(|r| r.center())// put monster in the center
+            .for_each(|pos| spawner::spawn_monster(&mut ecs, &mut rng, pos));
+
+        resources.insert(map_builder.map);
+        resources.insert(camera);
+
+        Self {
+            ecs,
+            resources,
+            systems: build_scheduler(),
+            options
         }
     }
+
+    // fn restart(&mut self) {
+    //     let mut rng = RandomNumberGenerator::new();
+    //     let map_builder = MapBuilder::build(&mut rng, &self.options);
+    //
+    //     self.map = map_builder.map;
+    //     self.camera = Camera::new(map_builder.player_start);
+    //     self.mode = GameMode::Play;
+    // }
+
+    // fn handle_input(&mut self, ctx: &mut BTerm) {
+    //     if let Some(key) = ctx.key {
+    //         match key {
+    //             VirtualKeyCode::R => self.mode = GameMode::Restart,
+    //             VirtualKeyCode::Q => self.mode = GameMode::Quit,
+    //             VirtualKeyCode::M => self.mode = GameMode::Menu,
+    //             VirtualKeyCode::P => self.mode = GameMode::Play,
+    //             _ => {}
+    //         }
+    //     }
+    // }
 
     fn show_menu(&mut self, ctx: &mut BTerm) {
         ctx.set_active_console(0);
@@ -99,14 +123,12 @@ impl GameState for State {
         ctx.set_active_console(1);
         ctx.cls();
 
-        self.handle_input(ctx);
+        // add current key resource (replaces any previous resource of same type)
+        self.resources.insert(ctx.key);
+        self.systems.execute(&mut self.ecs, &mut self.resources);
 
-        match self.mode {
-            GameMode::Play => self.play_game(ctx),
-            GameMode::Menu => self.show_menu(ctx),
-            GameMode::Quit => ctx.quitting = true,
-            GameMode::Restart => self.restart()
-        }
+        render_draw_buffer(ctx)
+            .expect("Could not render draw buffer");
     }
 }
 
@@ -122,8 +144,8 @@ fn main() -> BError {
         .with_simple_console_no_bg(DISPLAY_WIDTH, DISPLAY_HEIGHT, font)
         .build()?;
 
-    let mut state = State::new();
-    state.restart();
+    let state = State::new();
+    //state.restart();
 
     main_loop(context, state)
 }
