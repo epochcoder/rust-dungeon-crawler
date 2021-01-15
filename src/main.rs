@@ -6,6 +6,7 @@ mod components;
 mod spawner;
 mod camera;
 mod systems;
+mod turn_state;
 
 // this module is convenient for library users and includes most necessary things
 pub mod prelude {
@@ -30,6 +31,7 @@ pub mod prelude {
     pub use crate::components::*;
     pub use crate::systems::*;
     pub use crate::spawner::*;
+    pub use crate::turn_state::*;
 }
 
 // use our own prelude to make it available in main
@@ -41,7 +43,9 @@ use crate::prelude::*;
 struct State {
     ecs: World,
     resources: Resources,
-    systems: Schedule,
+    input_systems: Schedule,
+    player_systems: Schedule,
+    monster_systems: Schedule,
     options: GameOptions
 }
 
@@ -51,7 +55,9 @@ impl State {
         Self {
             ecs: World::default(),
             resources: Resources::default(),
-            systems: build_scheduler(),
+            input_systems: build_input_scheduler(),
+            player_systems: build_player_scheduler(),
+            monster_systems: build_monster_scheduler(),
             options: GameOptions::new()
         }
     }
@@ -67,14 +73,29 @@ impl State {
         spawn_player(&mut self.ecs, &mut camera, map_builder.player_start);
 
         // create monsters
-        map_builder.rooms.iter()
+        let monster_locations = map_builder.rooms.iter()
             .skip(1) // we are in the first room
-            .map(|r| r.center())// put monster in the center
+            .map(|r| {
+                let x = &rng.range(r.x1, r.x2);
+                let y = &rng.range(r.y1, r.y2);
+                Point::new(*x, *y)
+            }).collect::<Vec<Point>>();
+
+        monster_locations.into_iter()
             .for_each(|pos| spawner::spawn_monster(&mut self.ecs, &mut rng, pos));
 
+        // map_builder.rooms.iter()
+        //     .skip(1) // we are in the first room
+        //     .map(|r| r.center())// put monster in the center
+        //     .for_each(|pos| spawner::spawn_monster(&mut self.ecs, &mut rng, pos));
+
+
         self.options.mode = GameMode::Play;
+
         self.resources.insert(map_builder.map);
         self.resources.insert(camera);
+        // initial turn state resource
+        self.resources.insert(TurnState::AwaitingInput);
     }
 
     fn handle_main_input(&mut self, ctx: &mut BTerm) {
@@ -103,7 +124,15 @@ impl State {
     }
 
     fn run_systems(&mut self, ctx: &mut BTerm) {
-        self.systems.execute(&mut self.ecs, &mut self.resources);
+        // determine which systems to execute bases on the current turn state
+        let state = self.resources.get::<TurnState>().unwrap().clone();
+        match state {
+            TurnState::AwaitingInput => self.input_systems.execute(&mut self.ecs, &mut self.resources),
+            TurnState::PlayerTurn => self.player_systems.execute(&mut self.ecs, &mut self.resources),
+            TurnState::MonsterTurn => self.monster_systems.execute(&mut self.ecs, &mut self.resources),
+        }
+
+        // how to build menu system in to this? (render menu, with background, etc...
 
         render_draw_buffer(ctx)
             .expect("Could not render draw buffer");

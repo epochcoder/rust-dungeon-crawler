@@ -8,6 +8,7 @@ pub fn player_input(
     #[resource] map: &Map, // requests access to in legion's resource handler
     #[resource] key: &Option<VirtualKeyCode>, // TODO: how to do multiple keys?
     #[resource] camera: &mut Camera,
+    #[resource] turn_state: &mut TurnState,
 ) {
     if let Some(key) = key {
         let delta = match key {
@@ -30,6 +31,9 @@ pub fn player_input(
                 if map.can_enter_tile(destination) {
                     *pos = destination;
                     camera.on_player_move(destination);
+
+                    // end player turn
+                    *turn_state = TurnState::PlayerTurn;
                 }
             })
         }
