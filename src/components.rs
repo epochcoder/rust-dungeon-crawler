@@ -20,3 +20,12 @@ pub struct Render {
     pub color: ColorPair,
     pub glyph: FontCharType,
 }
+
+/// A message indicating that an entity wants to move somewhere
+/// Components can be messages too, and we only have one system processing these to keep duplication
+/// to a minimum
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct WantsToMove {
+    pub entity: Entity,
+    pub destination: Point
+}
