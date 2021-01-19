@@ -8,7 +8,6 @@ pub fn map_render(
     let mut draw_batch = DrawBatch::new();
     draw_batch.target(0);
 
-
     let offset = Point::new(camera.left_x, camera.top_y);
     for y in offset.y ..= camera.bottom_y {
         for x in offset.x ..= camera.right_x {

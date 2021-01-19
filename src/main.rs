@@ -111,7 +111,7 @@ impl State {
     }
 
     fn show_menu(&mut self, ctx: &mut BTerm) {
-        ctx.set_active_console(1);
+        ctx.set_active_console(2);
         ctx.print_centered(5, "Rust Dungeon Crawler");
         ctx.print(10, 7, "[P] Play / Resume");
         ctx.print(10, 8, "[R] Save / Restart");
@@ -121,6 +121,17 @@ impl State {
         ctx.print(12, 13, format!("> [[, ]] Room size: {}", self.options.room_size));
 
         self.options.handle_input(ctx);
+    }
+
+    fn clear_consoles(ctx: &mut BTerm) {
+        ctx.set_active_console(0);
+        ctx.cls();
+        ctx.set_active_console(1);
+        ctx.cls();
+        ctx.set_active_console(2);
+        ctx.cls();
+        ctx.set_active_console(3);
+        ctx.cls();
     }
 
     fn run_systems(&mut self, ctx: &mut BTerm) {
@@ -141,10 +152,7 @@ impl State {
 
 impl GameState for State {
     fn tick(&mut self, ctx: &mut BTerm) {
-        ctx.set_active_console(0);
-        ctx.cls();
-        ctx.set_active_console(1);
-        ctx.cls();
+        State::clear_consoles(ctx);
 
         // handle main game input
         self.handle_main_input(ctx);
@@ -153,6 +161,10 @@ impl GameState for State {
         self.resources.insert(ctx.key);
         // clone a set of options for our systems
         self.resources.insert(self.options.clone());
+
+        // set active console to fetch mouse input in correctly scaled form
+        ctx.set_active_console(0);
+        self.resources.insert(Point::from_tuple(ctx.mouse_pos()));
 
         match self.options.mode {
             GameMode::Play => self.run_systems(ctx),
@@ -166,14 +178,19 @@ impl GameState for State {
 
 fn main() -> BError {
     let font = "dungeonfont.png";
+    let term_font = "terminal8x8.png";
+
     let context = BTermBuilder::new()
         .with_title("Rust Dungeon Crawler")
         .with_dimensions(DISPLAY_WIDTH, DISPLAY_HEIGHT)
         .with_tile_dimensions(32, 32)
         .with_resource_path("resources/")
         .with_font(font, 32, 32)
+        .with_font(term_font, 8, 8)
         .with_simple_console(DISPLAY_WIDTH, DISPLAY_HEIGHT, font)
         .with_simple_console_no_bg(DISPLAY_WIDTH, DISPLAY_HEIGHT, font)
+        .with_simple_console_no_bg(DISPLAY_WIDTH, DISPLAY_HEIGHT, term_font) // large font
+        .with_simple_console_no_bg(SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, term_font) // smaller hud font
         .build()?;
 
     let mut state = State::new();
