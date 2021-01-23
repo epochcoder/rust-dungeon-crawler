@@ -11,8 +11,8 @@ pub fn spawn_player(ecs: &mut World, camera: &mut Camera, position: Point) {
             glyph: to_cp437('@'),
         },
         Health {
-            current: 20,
-            max: 20
+            current: 10,
+            max: 10
         }
     ));
 }
@@ -30,7 +30,7 @@ pub fn spawn_monster(
 
     ecs.push((
         Enemy,
-        MovesRandomly,
+        ChasingPlayer,
         pos,
         Render {
             color: ColorPair::new(WHITE, BLACK),
@@ -46,7 +46,7 @@ pub fn spawn_monster(
             current: hp,
             max: hp
         },
-        Name(name)
+        Name(name),
     ));
 }
 

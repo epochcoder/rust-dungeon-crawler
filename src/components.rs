@@ -15,6 +15,9 @@ pub struct Enemy;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct MovesRandomly;
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct ChasingPlayer;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Render {
     pub color: ColorPair,
