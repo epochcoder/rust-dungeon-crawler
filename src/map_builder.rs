@@ -11,6 +11,7 @@ pub struct MapBuilder {
     pub map: Map,
     pub rooms: Vec<Rect>,
     pub player_start: Point,
+    pub amulet_start: Point
 }
 
 impl MapBuilder {
@@ -19,6 +20,7 @@ impl MapBuilder {
             map: Map::new(),
             rooms: Vec::new(),
             player_start: Point::zero(),
+            amulet_start: Point::zero(),
         };
 
         // cave carving mode
@@ -26,6 +28,29 @@ impl MapBuilder {
         builder.build_random_rooms(rng, options);
         builder.build_corridors(rng);
         builder.player_start = builder.rooms[0].center();
+
+        // create a dijstra map to put the amulet as far as we can from the player
+        let p_idx = builder.map.point2d_to_index(builder.player_start);
+        let dijkstra_map = DijkstraMap::new(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            &vec![p_idx],
+            &builder.map,
+            1024.0
+        );
+
+        //find the highest path in the map
+        const UNREACHABLE: f32 = f32::MAX;
+        builder.amulet_start = builder.map.index_to_point2d(
+            dijkstra_map.map
+            .iter()
+            .enumerate()
+            .filter(|(_, dist)| **dist < UNREACHABLE)
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .unwrap_or((p_idx, &0f32))
+            .0
+        );
+
         builder
     }
 

@@ -1,3 +1,6 @@
+// use our own prelude to make it available in main
+use crate::prelude::*;
+
 // this links the map module to the main project
 mod map;
 mod map_builder;
@@ -12,30 +15,26 @@ mod turn_state;
 pub mod prelude {
     // re-export bracket lib
     pub use bracket_lib::prelude::*;
-
     // re-export legion
     pub use legion::*;
-    pub use legion::world::SubWorld;
     pub use legion::systems::CommandBuffer;
+    pub use legion::world::SubWorld;
+
+    pub use crate::camera::*;
+    pub use crate::components::*;
+    // re-export map/player as a public modules
+    pub use crate::map::*;
+    pub use crate::map_builder::*;
+    pub use crate::options::*;
+    pub use crate::spawner::*;
+    pub use crate::systems::*;
+    pub use crate::turn_state::*;
 
     pub const SCREEN_WIDTH: i32 = 80;
     pub const SCREEN_HEIGHT: i32 = 50;
     pub const DISPLAY_WIDTH: i32 = SCREEN_WIDTH / 2;
     pub const DISPLAY_HEIGHT: i32 = SCREEN_HEIGHT / 2;
-
-    // re-export map/player as a public modules
-    pub use crate::map::*;
-    pub use crate::map_builder::*;
-    pub use crate::camera::*;
-    pub use crate::options::*;
-    pub use crate::components::*;
-    pub use crate::systems::*;
-    pub use crate::spawner::*;
-    pub use crate::turn_state::*;
 }
-
-// use our own prelude to make it available in main
-use crate::prelude::*;
 
 // crate:: accesses the root of the tree
 // super:: accesses the parent module (module immediately above current module)
@@ -46,7 +45,7 @@ struct State {
     input_systems: Schedule,
     player_systems: Schedule,
     monster_systems: Schedule,
-    options: GameOptions
+    options: GameOptions,
 }
 
 impl State {
@@ -58,12 +57,13 @@ impl State {
             input_systems: build_input_scheduler(),
             player_systems: build_player_scheduler(),
             monster_systems: build_monster_scheduler(),
-            options: GameOptions::new()
+            options: GameOptions::new(),
         }
     }
 
     fn restart(&mut self) {
         self.ecs.clear();
+        self.ecs = World::default();
 
         let mut rng = RandomNumberGenerator::new();
         let mut camera = Camera::new();
@@ -71,6 +71,7 @@ impl State {
 
         // since we only have one player, we can add them here
         spawn_player(&mut self.ecs, &mut camera, map_builder.player_start);
+        spawn_amulet_of_yala(&mut self.ecs, map_builder.amulet_start);
 
         // create monsters
         let monster_locations = map_builder.rooms.iter()
@@ -89,11 +90,11 @@ impl State {
         //     .map(|r| r.center())// put monster in the center
         //     .for_each(|pos| spawner::spawn_monster(&mut self.ecs, &mut rng, pos));
 
-
         self.options.mode = GameMode::Play;
 
         self.resources.insert(map_builder.map);
         self.resources.insert(camera);
+
         // initial turn state resource
         self.resources.insert(TurnState::AwaitingInput);
     }
@@ -112,10 +113,10 @@ impl State {
 
     fn show_menu(&mut self, ctx: &mut BTerm) {
         ctx.set_active_console(2);
-        ctx.print_centered(5, "Rust Dungeon Crawler");
+        ctx.print_centered(5, "The Rusty Amulet");
         ctx.print(10, 7, "[P] Play / Resume");
         ctx.print(10, 8, "[R] Save / Restart");
-        ctx.print(10,9, "[Q] Quit");
+        ctx.print(10, 9, "[Q] Quit");
         ctx.print_color(10, 11, GREEN, BLACK, "Options");
         ctx.print(12, 12, format!("> [<, >] Max rooms: {}", self.options.max_rooms));
         ctx.print(12, 13, format!("> [[, ]] Room size: {}", self.options.room_size));
@@ -141,12 +142,38 @@ impl State {
             TurnState::AwaitingInput => self.input_systems.execute(&mut self.ecs, &mut self.resources),
             TurnState::PlayerTurn => self.player_systems.execute(&mut self.ecs, &mut self.resources),
             TurnState::MonsterTurn => self.monster_systems.execute(&mut self.ecs, &mut self.resources),
+            TurnState::GameOver => self.game_over(ctx),
+            TurnState::Victory => self.victory(ctx),
         }
 
         // how to build menu system in to this? (render menu, with background, etc...
 
         render_draw_buffer(ctx)
             .expect("Could not render draw buffer");
+    }
+
+    fn game_over(&mut self, ctx: &mut BTerm) {
+        ctx.set_active_console(3);
+        ctx.print_color_centered(2, RED, BLACK, "Your quest has ended.");
+        ctx.print_color_centered(4, WHITE, BLACK,
+                                 "Slain by a monster, your hero's \njourney has come to premature end.", );
+        ctx.print_color_centered(5, WHITE, BLACK,
+                                 "The Amulet of YALA remains unclaimed, \nand your home town has not been saved by the onslaught", );
+        ctx.print_color_centered(8, YELLOW, BLACK,
+                                 "Dont worry, you can always try again with a new hero!", );
+        ctx.print_color_centered(9, YELLOW, BLACK,
+                                 "Press 'R' to play again", );
+    }
+
+    fn victory(&mut self, ctx: &mut BTerm) {
+        ctx.set_active_console(3);
+        ctx.print_color_centered(2, GREEN, BLACK, "Your quest has ended.");
+        ctx.print_color_centered(4, WHITE, BLACK,
+                                 "Victorious, your hero's \njourney has come to an end.", );
+        ctx.print_color_centered(5, WHITE, BLACK,
+                                 "The Amulet of YALA has been claimed, \nand your home town has been saved by the monster onslaught", );
+        ctx.print_color_centered(9, YELLOW, BLACK,
+                                 "Press 'R' to play again, or 'Q' to quit", );
     }
 }
 

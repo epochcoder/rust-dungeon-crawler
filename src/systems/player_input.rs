@@ -4,6 +4,7 @@ use crate::prelude::*;
 #[write_component(Health)]
 #[read_component(Point)]
 #[read_component(Enemy)]
+#[read_component(Item)]
 #[read_component(Player)] // request read access to the player marker type
 pub fn player_input(
     ecs: &mut SubWorld, // only contains the requested components
@@ -57,6 +58,25 @@ pub fn player_input(
                         },
                     ));
                 });
+
+            let mut items = <(Entity, &Point)>::query()
+                .filter(component::<Item>());
+
+            items.iter(ecs)
+                .filter(|(_, pos)| **pos == destination)
+                .for_each(|(item, _)| {
+                    did_something = true;
+
+                    commands.push((
+                        (),
+                        ItemReceived {
+                            receiver: player_entity,
+                            item: *item,
+                        }
+                    ));
+                });
+
+            // check if we hit an item, apply item effects, or end game
 
             if !hit_enemy {
                 did_something = true;

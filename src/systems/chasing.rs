@@ -5,6 +5,7 @@ use crate::prelude::*;
 #[read_component(Health)]
 #[read_component(Name)]
 #[read_component(Player)]
+#[read_component(Enemy)]
 #[read_component(ChasingPlayer)]
 pub fn chasing(
     ecs: &SubWorld,
@@ -21,7 +22,6 @@ pub fn chasing(
         .0;
 
     let player_idx = map_idx(player_pos.x, player_pos.y);
-
     let search_targets = vec![player_idx];
     let dijkstra_map = DijkstraMap::new(
         SCREEN_WIDTH,
@@ -31,13 +31,15 @@ pub fn chasing(
         1024.0
     );
 
-    movers.iter(ecs).for_each(|(monster, pos, _)| {
-        let idx = map_idx(pos.x, pos.y);
-        if let Some(dest) = DijkstraMap::find_lowest_exit(&dijkstra_map, idx, map) {
-            let distance = DistanceAlg::Pythagoras.distance2d(*pos, *player_pos);
+    movers.iter(ecs).for_each(|(monster, monster_pos, _)| {
+        let monster_map_idx = map_idx(monster_pos.x, monster_pos.y);
+
+        // find the easiest way to the player
+        if let Some(dest) = DijkstraMap::find_lowest_exit(&dijkstra_map, monster_map_idx, map) {
+            let distance = DistanceAlg::Pythagoras.distance2d(*monster_pos, *player_pos);
 
             // diagonal tile distance is approximately 1.4
-            let dest = if distance < 1.4 {
+            let dest = if distance < 1.2 {
                 // move into player
                 *player_pos
             } else {
@@ -60,6 +62,14 @@ pub fn chasing(
                             victim: *victim,
                             attacker: *monster
                         }));
+                    }
+
+                    if !attacked && ecs.entry_ref(*victim)
+                        .unwrap()
+                        .get_component::<Enemy>()
+                        .is_ok()
+                    {
+                        println!("will move into another monster!");
                     }
                 });
 
