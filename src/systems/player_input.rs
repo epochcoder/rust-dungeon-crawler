@@ -62,6 +62,7 @@ pub fn player_input(
             let mut items = <(Entity, &Point)>::query()
                 .filter(component::<Item>());
 
+            // check if we hit an item, apply item effects, or end game
             items.iter(ecs)
                 .filter(|(_, pos)| **pos == destination)
                 .for_each(|(item, _)| {
@@ -75,8 +76,6 @@ pub fn player_input(
                         }
                     ));
                 });
-
-            // check if we hit an item, apply item effects, or end game
 
             if !hit_enemy {
                 did_something = true;

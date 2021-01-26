@@ -70,7 +70,7 @@ impl State {
         let map_builder = MapBuilder::build(&mut rng, &self.options);
 
         // since we only have one player, we can add them here
-        spawn_player(&mut self.ecs, &mut camera, map_builder.player_start);
+        spawn_player(&mut self.ecs, &mut camera, map_builder.player_start, self.options.player_fov);
         spawn_amulet_of_yala(&mut self.ecs, map_builder.amulet_start);
 
         // create monsters
@@ -83,7 +83,7 @@ impl State {
             }).collect::<Vec<Point>>();
 
         monster_locations.into_iter()
-            .for_each(|pos| spawner::spawn_monster(&mut self.ecs, &mut rng, pos));
+            .for_each(|pos| spawner::spawn_monster(&mut self.ecs, &mut rng, pos, self.options.monster_fov));
 
         // map_builder.rooms.iter()
         //     .skip(1) // we are in the first room
@@ -120,6 +120,8 @@ impl State {
         ctx.print_color(10, 11, GREEN, BLACK, "Options");
         ctx.print(12, 12, format!("> [<, >] Max rooms: {}", self.options.max_rooms));
         ctx.print(12, 13, format!("> [[, ]] Room size: {}", self.options.room_size));
+        ctx.print(12, 14, format!("> [-, +] Monster FOV: {}", self.options.monster_fov));
+        ctx.print(12, 15, format!("> [;, '] Player FOV: {}", self.options.player_fov));
 
         self.options.handle_input(ctx);
     }

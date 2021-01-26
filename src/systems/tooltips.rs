@@ -4,11 +4,20 @@ use crate::prelude::*;
 #[read_component(Point)]
 #[read_component(Name)]
 #[read_component(Health)]
+#[read_component(Player)]
+#[read_component(FieldOfView)]
 pub fn tooltips(
     ecs: &SubWorld,
     #[resource] camera: &Camera,
     #[resource] mouse_pos: &Point
 ) {
+    // get player field of view
+    let player_fov = <&FieldOfView>::query()
+        .filter(component::<Player>())
+        .iter(ecs)
+        .nth(0)
+        .unwrap();
+
     // including the entity here, includes the entity that owns the components
     let mut positions = <(Entity, &Point, &Name)>::query();
 
@@ -21,7 +30,9 @@ pub fn tooltips(
     positions
         .iter(ecs)
         // filter for the mouse hovering exactly above the monster
-        .filter(|(_, pos, _)| **pos == map_pos)
+        .filter(|(_, pos, _)|
+            **pos == map_pos
+                && player_fov.visible_tiles.contains(&pos))
         .for_each(|(ent, _, name)| {
             let mut screen_pos = *mouse_pos * 4;
             screen_pos.y = screen_pos.y - 1;

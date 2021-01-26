@@ -1,8 +1,35 @@
 use crate::prelude::*;
 
+use std::collections::HashSet;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FieldOfView {
+    pub visible_tiles: HashSet<Point>,
+    pub radius: i32,
+    pub is_dirty: bool
+}
+
+impl FieldOfView {
+    pub fn new(radius: i32)  -> Self {
+        Self {
+            visible_tiles: HashSet::new(),
+            radius,
+            // need to recalculate immediately
+            is_dirty: true
+        }
+    }
+
+    pub fn clone_dirty(&self) -> Self {
+        Self {
+            visible_tiles: HashSet::new(),
+            radius: self.radius,
+            is_dirty: true
+        }
+    }
+}
+
 // legion components are usually structs, but can also be enums
 // all components will be in this file for now
-
 
 /// Denotes a player component, not necessary to contain any fields, will act as a tag
 #[derive(Clone, Copy, Debug, PartialEq)]

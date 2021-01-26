@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 /// Push a 'player' entity onto the world, represented as a tuple of components
-pub fn spawn_player(ecs: &mut World, camera: &mut Camera, position: Point) {
+pub fn spawn_player(ecs: &mut World, camera: &mut Camera, position: Point, fov: i32) {
     camera.on_player_move(position);
     ecs.push((
         Player,
@@ -13,7 +13,8 @@ pub fn spawn_player(ecs: &mut World, camera: &mut Camera, position: Point) {
         Health {
             current: 10,
             max: 10
-        }
+        },
+        FieldOfView::new(fov)
     ));
 }
 
@@ -21,7 +22,9 @@ pub fn spawn_player(ecs: &mut World, camera: &mut Camera, position: Point) {
 pub fn spawn_monster(
     ecs: &mut World,
     rng: &mut RandomNumberGenerator,
-    pos: Point)
+    pos: Point,
+    fov: i32
+)
 {
     let (hp, name, glyph) = match rng.roll_dice(1, 10) {
         1..=8 => goblin(),
@@ -47,6 +50,7 @@ pub fn spawn_monster(
             max: hp
         },
         Name(name),
+        FieldOfView::new(fov)
     ));
 }
 
