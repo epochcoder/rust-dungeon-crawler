@@ -73,7 +73,8 @@ pub fn chasing(
                             .get_component::<Enemy>()
                             .is_ok()
                         {
-                            println!("will move into another monster!");
+                            println!("Will move into another monster!");
+                            attacked = true;
                         }
                     });
 

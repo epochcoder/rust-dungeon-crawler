@@ -11,8 +11,6 @@ pub fn item(
     #[resource] turn_state: &mut TurnState,
     commands: &mut CommandBuffer,
 ) {
-    println!("Receiving item!");
-
     if ecs.entry_ref(item_received.item)
         .unwrap()
         .get_component::<AmuletOfYala>()
@@ -25,7 +23,6 @@ pub fn item(
 
     //if maybe some items remain.....
     commands.remove(item_received.item);
-    //
 
     commands.remove(*message_entity);
 }
