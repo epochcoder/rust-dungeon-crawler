@@ -37,8 +37,7 @@ pub fn player_input(
 
         if delta.x != 0 || delta.y != 0 {
             // now get monsters to see if player will move into one
-            let mut enemies = <(Entity, &Point)>::query()
-                .filter(component::<Enemy>());
+            let mut enemies = <(Entity, &Point)>::query().filter(component::<Enemy>());
 
             let mut hit_enemy = false;
             // look for any monsters we might have moved into
@@ -59,11 +58,11 @@ pub fn player_input(
                     ));
                 });
 
-            let mut items = <(Entity, &Point)>::query()
-                .filter(component::<Item>());
+            let mut items = <(Entity, &Point)>::query().filter(component::<Item>());
 
             // check if we hit an item, apply item effects, or end game
-            items.iter(ecs)
+            items
+                .iter(ecs)
                 .filter(|(_, pos)| **pos == destination)
                 .for_each(|(item, _)| {
                     did_something = true;
@@ -73,7 +72,7 @@ pub fn player_input(
                         ItemReceived {
                             receiver: player_entity,
                             item: *item,
-                        }
+                        },
                     ));
                 });
 

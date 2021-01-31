@@ -4,10 +4,7 @@ use crate::prelude::*;
 #[read_component(WantsToAttack)]
 #[read_component(Player)]
 #[write_component(Health)]
-pub fn combat(
-    ecs: &mut SubWorld,
-    commands: &mut CommandBuffer
-) {
+pub fn combat(ecs: &mut SubWorld, commands: &mut CommandBuffer) {
     // look for attack messages
     let mut attackers = <(Entity, &WantsToAttack)>::query();
 
@@ -16,9 +13,10 @@ pub fn combat(
         .map(|(attack_entity, attack)| (*attack_entity, attack.victim))
         .collect();
 
-    victims.iter().for_each(|( message, victim)| {
+    victims.iter().for_each(|(message, victim)| {
         // check if the player died
-        let is_player = ecs.entry_ref(*victim)
+        let is_player = ecs
+            .entry_ref(*victim)
             .unwrap()
             .get_component::<Player>()
             .is_ok();

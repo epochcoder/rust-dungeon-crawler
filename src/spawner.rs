@@ -12,23 +12,17 @@ pub fn spawn_player(ecs: &mut World, camera: &mut Camera, position: Point, fov: 
         },
         Health {
             current: 10,
-            max: 10
+            max: 10,
         },
-        FieldOfView::new(fov)
+        FieldOfView::new(fov),
     ));
 }
 
 /// Push a 'monster' entity onto the world, represented as a tuple of different components
-pub fn spawn_monster(
-    ecs: &mut World,
-    rng: &mut RandomNumberGenerator,
-    pos: Point,
-    fov: i32
-)
-{
+pub fn spawn_monster(ecs: &mut World, rng: &mut RandomNumberGenerator, pos: Point, fov: i32) {
     let (hp, name, glyph) = match rng.roll_dice(1, 10) {
         1..=8 => goblin(),
-        _ => orc()
+        _ => orc(),
     };
 
     ecs.push((
@@ -47,10 +41,10 @@ pub fn spawn_monster(
         },
         Health {
             current: hp,
-            max: hp
+            max: hp,
         },
         Name(name),
-        FieldOfView::new(fov)
+        FieldOfView::new(fov),
     ));
 }
 
@@ -69,8 +63,8 @@ pub fn spawn_amulet_of_yala(ecs: &mut World, pos: Point) {
         pos,
         Render {
             color: ColorPair::new(WHITE, BLACK),
-            glyph: to_cp437('|')
+            glyph: to_cp437('|'),
         },
-        Name("Amulet of Yala".to_string())
+        Name("Amulet of Yala".to_string()),
     ));
 }

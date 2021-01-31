@@ -2,12 +2,12 @@
 use crate::prelude::*;
 
 // this links the map module to the main project
+mod camera;
+mod components;
 mod map;
 mod map_builder;
 mod options;
-mod components;
 mod spawner;
-mod camera;
 mod systems;
 mod turn_state;
 
@@ -16,9 +16,9 @@ pub mod prelude {
     // re-export bracket lib
     pub use bracket_lib::prelude::*;
     // re-export legion
-    pub use legion::*;
     pub use legion::systems::CommandBuffer;
     pub use legion::world::SubWorld;
+    pub use legion::*;
 
     pub use crate::camera::*;
     pub use crate::components::*;
@@ -70,33 +70,24 @@ impl State {
         let map_builder = MapBuilder::build(&mut rng, &self.options);
 
         // since we only have one player, we can add them here
-        spawn_player(&mut self.ecs, &mut camera, map_builder.player_start, self.options.player_fov);
+        spawn_player(
+            &mut self.ecs,
+            &mut camera,
+            map_builder.player_start,
+            self.options.player_fov,
+        );
         spawn_amulet_of_yala(&mut self.ecs, map_builder.amulet_start);
 
-        // create monsters
-        let monster_locations = map_builder.rooms.iter()
-            .skip(1) // we are in the first room
-            .map(|r| {
-                let x = &rng.range(r.x1, r.x2);
-                let y = &rng.range(r.y1, r.y2);
-                Point::new(*x, *y)
-            }).collect::<Vec<Point>>();
-
-        monster_locations.into_iter()
-            .for_each(|pos| spawner::spawn_monster(&mut self.ecs, &mut rng, pos, self.options.monster_fov));
-
-        // map_builder.rooms.iter()
-        //     .skip(1) // we are in the first room
-        //     .map(|r| r.center())// put monster in the center
-        //     .for_each(|pos| spawner::spawn_monster(&mut self.ecs, &mut rng, pos));
+        map_builder.monster_spawns.into_iter().for_each(|pos| {
+            spawner::spawn_monster(&mut self.ecs, &mut rng, pos, self.options.monster_fov)
+        });
 
         self.options.mode = GameMode::Play;
 
-        self.resources.insert(map_builder.map);
-        self.resources.insert(camera);
-
         // initial turn state resource
         self.resources.insert(TurnState::AwaitingInput);
+        self.resources.insert(map_builder.map);
+        self.resources.insert(camera);
     }
 
     fn handle_main_input(&mut self, ctx: &mut BTerm) {
@@ -118,10 +109,26 @@ impl State {
         ctx.print(10, 8, "[R] Save / Restart");
         ctx.print(10, 9, "[Q] Quit");
         ctx.print_color(10, 11, GREEN, BLACK, "Options");
-        ctx.print(12, 12, format!("> [<, >] Max rooms: {}", self.options.max_rooms));
-        ctx.print(12, 13, format!("> [[, ]] Room size: {}", self.options.room_size));
-        ctx.print(12, 14, format!("> [-, +] Monster FOV: {}", self.options.monster_fov));
-        ctx.print(12, 15, format!("> [;, '] Player FOV: {}", self.options.player_fov));
+        ctx.print(
+            12,
+            12,
+            format!("> [<, >] Max rooms: {}", self.options.max_rooms),
+        );
+        ctx.print(
+            12,
+            13,
+            format!("> [[, ]] Room size: {}", self.options.room_size),
+        );
+        ctx.print(
+            12,
+            14,
+            format!("> [-, +] Monster FOV: {}", self.options.monster_fov),
+        );
+        ctx.print(
+            12,
+            15,
+            format!("> [;, '] Player FOV: {}", self.options.player_fov),
+        );
 
         self.options.handle_input(ctx);
     }
@@ -141,41 +148,56 @@ impl State {
         // determine which systems to execute bases on the current turn state
         let state = self.resources.get::<TurnState>().unwrap().clone();
         match state {
-            TurnState::AwaitingInput => self.input_systems.execute(&mut self.ecs, &mut self.resources),
-            TurnState::PlayerTurn => self.player_systems.execute(&mut self.ecs, &mut self.resources),
-            TurnState::MonsterTurn => self.monster_systems.execute(&mut self.ecs, &mut self.resources),
+            TurnState::AwaitingInput => self
+                .input_systems
+                .execute(&mut self.ecs, &mut self.resources),
+            TurnState::PlayerTurn => self
+                .player_systems
+                .execute(&mut self.ecs, &mut self.resources),
+            TurnState::MonsterTurn => self
+                .monster_systems
+                .execute(&mut self.ecs, &mut self.resources),
             TurnState::GameOver => self.game_over(ctx),
             TurnState::Victory => self.victory(ctx),
         }
 
         // how to build menu system in to this? (render menu, with background, etc...
 
-        render_draw_buffer(ctx)
-            .expect("Could not render draw buffer");
+        render_draw_buffer(ctx).expect("Could not render draw buffer");
     }
 
     fn game_over(&mut self, ctx: &mut BTerm) {
         ctx.set_active_console(3);
         ctx.print_color_centered(2, RED, BLACK, "Your quest has ended.");
-        ctx.print_color_centered(4, WHITE, BLACK,
-                                 "Slain by a monster, your hero's \njourney has come to premature end.", );
+        ctx.print_color_centered(
+            4,
+            WHITE,
+            BLACK,
+            "Slain by a monster, your hero's \njourney has come to premature end.",
+        );
         ctx.print_color_centered(5, WHITE, BLACK,
                                  "The Amulet of YALA remains unclaimed, \nand your home town has not been saved by the onslaught", );
-        ctx.print_color_centered(8, YELLOW, BLACK,
-                                 "Dont worry, you can always try again with a new hero!", );
-        ctx.print_color_centered(9, YELLOW, BLACK,
-                                 "Press 'R' to play again", );
+        ctx.print_color_centered(
+            8,
+            YELLOW,
+            BLACK,
+            "Dont worry, you can always try again with a new hero!",
+        );
+        ctx.print_color_centered(9, YELLOW, BLACK, "Press 'R' to play again");
     }
 
     fn victory(&mut self, ctx: &mut BTerm) {
         ctx.set_active_console(3);
         ctx.print_color_centered(2, GREEN, BLACK, "Your quest has ended.");
-        ctx.print_color_centered(4, WHITE, BLACK,
-                                 "Victorious, your hero's \njourney has come to an end.", );
+        ctx.print_color_centered(
+            4,
+            WHITE,
+            BLACK,
+            "Victorious, your hero's \njourney has come to an end.",
+        );
         ctx.print_color_centered(5, WHITE, BLACK,
                                  "The Amulet of YALA has been claimed, \nand your home town has been saved by the monster onslaught", );
-        ctx.print_color_centered(9, YELLOW, BLACK,
-                                 "Press 'R' to play again, or 'Q' to quit", );
+        ctx.print_color_centered(9, YELLOW, BLACK, "Press 'R' to play again, or 'Q' to quit");
     }
 }
 
@@ -200,7 +222,7 @@ impl GameState for State {
             // TODO: add menu as system or somehow run with legion
             GameMode::Menu => self.show_menu(ctx),
             GameMode::Quit => ctx.quitting = true,
-            GameMode::Restart => self.restart()
+            GameMode::Restart => self.restart(),
         }
     }
 }

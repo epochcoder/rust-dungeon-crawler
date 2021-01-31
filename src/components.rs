@@ -6,16 +6,16 @@ use std::collections::HashSet;
 pub struct FieldOfView {
     pub visible_tiles: HashSet<Point>,
     pub radius: i32,
-    pub is_dirty: bool
+    pub is_dirty: bool,
 }
 
 impl FieldOfView {
-    pub fn new(radius: i32)  -> Self {
+    pub fn new(radius: i32) -> Self {
         Self {
             visible_tiles: HashSet::new(),
             radius,
             // need to recalculate immediately
-            is_dirty: true
+            is_dirty: true,
         }
     }
 
@@ -23,7 +23,7 @@ impl FieldOfView {
         Self {
             visible_tiles: HashSet::new(),
             radius: self.radius,
-            is_dirty: true
+            is_dirty: true,
         }
     }
 }
@@ -57,13 +57,13 @@ pub struct Render {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct WantsToMove {
     pub entity: Entity,
-    pub destination: Point
+    pub destination: Point,
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Health {
     pub current: i32,
-    pub max: i32
+    pub max: i32,
 }
 
 #[derive(Clone, PartialEq)]
@@ -72,13 +72,13 @@ pub struct Name(pub String);
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct WantsToAttack {
     pub attacker: Entity,
-    pub victim: Entity
+    pub victim: Entity,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ItemReceived {
     pub receiver: Entity,
-    pub item: Entity
+    pub item: Entity,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -87,4 +87,3 @@ pub struct Item;
 // yet another lost amulet
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct AmuletOfYala;
-

@@ -14,7 +14,7 @@ pub fn movement(
     #[resource] map: &mut Map,
     #[resource] camera: &mut Camera,
     ecs: &mut SubWorld,
-    commands: &mut CommandBuffer
+    commands: &mut CommandBuffer,
 ) {
     if map.can_enter_tile(movement_intention.destination) {
         if let Ok(entry) = ecs.entry_ref(movement_intention.entity) {
@@ -27,7 +27,8 @@ pub fn movement(
                 commands.add_component(movement_intention.entity, movement_intention.destination);
 
                 // look up the entity that wants to move (in this case, a player)
-                if ecs.entry_ref(movement_intention.entity)
+                if ecs
+                    .entry_ref(movement_intention.entity)
                     .unwrap()
                     .get_component::<Player>()
                     .is_ok()

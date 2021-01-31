@@ -5,10 +5,7 @@ use crate::prelude::*;
 #[read_component(Render)]
 #[read_component(FieldOfView)]
 #[read_component(Player)]
-pub fn entity_render(
-    ecs: &SubWorld,
-    #[resource] camera: &Camera,
-) {
+pub fn entity_render(ecs: &SubWorld, #[resource] camera: &Camera) {
     // get player field of view
     let player_fov = <&FieldOfView>::query()
         .filter(component::<Player>())
@@ -24,13 +21,10 @@ pub fn entity_render(
         .iter(ecs)
         .filter(|(pos, _)| player_fov.visible_tiles.contains(pos))
         .for_each(|(point, render)| {
-            draw_batch.set(
-                *point - offset,
-                render.color,
-                render.glyph,
-            );
+            draw_batch.set(*point - offset, render.color, render.glyph);
         });
 
-    draw_batch.submit(5000)
+    draw_batch
+        .submit(5000)
         .expect("Could new submit entity_render batch");
 }

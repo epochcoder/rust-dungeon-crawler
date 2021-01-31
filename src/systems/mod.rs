@@ -1,16 +1,16 @@
 // this module is private to systems
-mod player_input;
-mod map_render;
-mod entity_render;
-mod random_move;
 mod chasing;
 mod combat;
 mod end_turn;
-mod movement;
-mod hud;
-mod tooltips;
-mod item;
+mod entity_render;
 mod fov;
+mod hud;
+mod item;
+mod map_render;
+mod movement;
+mod player_input;
+mod random_move;
+mod tooltips;
 
 // prelude cannot include it since we made nothing public
 use crate::prelude::*;

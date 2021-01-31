@@ -3,11 +3,7 @@ use crate::prelude::*;
 #[system]
 #[read_component(Player)]
 #[read_component(FieldOfView)]
-pub fn map_render(
-    ecs: &SubWorld,
-    #[resource] map: &Map,
-    #[resource] camera: &Camera
-) {
+pub fn map_render(ecs: &SubWorld, #[resource] map: &Map, #[resource] camera: &Camera) {
     // get player field of view
     let player_fov = <&FieldOfView>::query()
         .filter(component::<Player>())
@@ -19,8 +15,8 @@ pub fn map_render(
     draw_batch.target(0);
 
     let offset = Point::new(camera.left_x, camera.top_y);
-    for y in offset.y ..= camera.bottom_y {
-        for x in offset.x ..= camera.right_x {
+    for y in offset.y..=camera.bottom_y {
+        for x in offset.x..=camera.right_x {
             let pt = Point::new(x, y);
 
             if map.in_bounds(pt) {
@@ -36,20 +32,17 @@ pub fn map_render(
 
                     let glyph = match map.tiles[idx] {
                         TileType::Wall => to_cp437('#'),
-                        TileType::Floor(_) => to_cp437('.')
+                        TileType::Floor => to_cp437('.'),
                     };
 
-                    draw_batch.set(
-                        pt - offset,
-                        ColorPair::new(tint, BLACK),
-                        glyph
-                    );
+                    draw_batch.set(pt - offset, ColorPair::new(tint, BLACK), glyph);
                 }
             }
         }
     }
 
     //only submit after all drawing operations have been completed
-    draw_batch.submit(0)
+    draw_batch
+        .submit(0)
         .expect("Error submitting map_render batch");
 }

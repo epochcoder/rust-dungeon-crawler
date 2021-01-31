@@ -11,7 +11,8 @@ pub fn item(
     #[resource] turn_state: &mut TurnState,
     commands: &mut CommandBuffer,
 ) {
-    if ecs.entry_ref(item_received.item)
+    if ecs
+        .entry_ref(item_received.item)
         .unwrap()
         .get_component::<AmuletOfYala>()
         .is_ok()

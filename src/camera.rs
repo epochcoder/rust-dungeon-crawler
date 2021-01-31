@@ -16,7 +16,7 @@ impl Camera {
             left_x: 0,
             right_x: 0,
             top_y: 0,
-            bottom_y: 0
+            bottom_y: 0,
         }
     }
 
