@@ -23,7 +23,7 @@ impl CellularAutomataArchitect {
             for x in 1..SCREEN_WIDTH - 1 {
                 let n = self.count_neighbors(x, y, map);
                 let idx = map_idx(x, y);
-                if n > 4 || n == 0 {
+                if n > 5 || n == 0 {
                     new_tiles[idx] = TileType::Wall;
                 } else {
                     new_tiles[idx] = TileType::Floor;
@@ -68,15 +68,19 @@ impl CellularAutomataArchitect {
 
 impl MapArchitect for CellularAutomataArchitect {
     fn new(&mut self, rng: &mut RandomNumberGenerator, options: &GameOptions) -> MapBuilder {
+        println!("Running CellularAutomataArchitect");
+
         let mut mb = MapBuilder::new();
 
         self.random_noise_map(rng, &mut mb.map);
-        self.iteration(&mut mb.map);
+        for _ in 0..10 {
+            self.iteration(&mut mb.map);
+        }
 
         let center = Point::new(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
         mb.player_start = self.find_closest_point_to(center, &mb.map).unwrap();
         mb.amulet_start = self.find_furthest_point_from(mb.player_start, &mb.map).unwrap();
-        mb.monster_spawns = mb.spawn_locations(mb.player_start.clone(), options, rng);
+        mb.monster_spawns = mb.spawn_locations(mb.player_start.clone(), options, rng, DEFAULT_NUM_MONSTERS);
 
         mb
     }

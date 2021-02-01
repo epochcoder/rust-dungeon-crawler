@@ -74,6 +74,7 @@ impl RoomsArchitect {
 
 impl MapArchitect for RoomsArchitect {
     fn new(&mut self, rng: &mut RandomNumberGenerator, options: &GameOptions) -> MapBuilder {
+        println!("Running RoomsArchitect");
         let mut builder = MapBuilder::new();
 
         builder.map.fill(TileType::Wall);
