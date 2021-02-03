@@ -3,6 +3,7 @@ mod empty;
 mod rooms;
 mod drunkard;
 mod prefab;
+mod themes;
 
 use crate::prelude::*;
 
@@ -11,6 +12,13 @@ use automata::CellularAutomataArchitect;
 use empty::EmptyArchitect;
 use rooms::RoomsArchitect;
 use drunkard::DrunkardArchitect;
+use themes::DungeonTheme;
+use themes::ForestTheme;
+
+// legion resources have to be thread safe (thus constrained by send + sync)
+pub trait MapTheme: Send + Sync {
+    fn tile_to_render(&self, tile_type: TileType) -> FontCharType;
+}
 
 trait MapArchitect {
     fn new(&mut self, rng: &mut RandomNumberGenerator, options: &GameOptions) -> MapBuilder;
@@ -27,6 +35,7 @@ pub struct MapBuilder {
     pub monster_spawns: Vec<Point>,
     pub player_start: Point,
     pub amulet_start: Point,
+    pub theme: Box<dyn MapTheme>,
 }
 
 impl MapBuilder {
@@ -37,6 +46,7 @@ impl MapBuilder {
             monster_spawns: Vec::new(),
             player_start: Point::zero(),
             amulet_start: Point::zero(),
+            theme: DungeonTheme::new(),
         }
     }
 
@@ -52,6 +62,11 @@ impl MapBuilder {
 
         apply_prefab(&mut builder, rng, &FORTRESS);
         apply_prefab(&mut builder, rng, &SPIRALL);
+
+        builder.theme = match rng.range(0, 2) {
+            0 => DungeonTheme::new(),
+            _ => ForestTheme::new(),
+        };
 
         builder
     }

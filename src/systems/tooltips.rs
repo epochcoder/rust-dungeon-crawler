@@ -32,14 +32,21 @@ pub fn tooltips(ecs: &SubWorld, #[resource] camera: &Camera, #[resource] mouse_p
             let mut screen_pos = *mouse_pos * 4;
             screen_pos.y = screen_pos.y - 1;
 
-            // we don't query for the health component in positions,
-            // since we might support other tooltips also
-            let display = if let Ok(health) = ecs
-                .entry_ref(*ent).unwrap().get_component::<Health>()
+            let display = if let Ok(_) = ecs
+                .entry_ref(*ent).unwrap().get_component::<Player>()
             {
-                format!("{} : {} hp", &name.0, health.current)
+                // show x & y of map of where player is for debugging
+                format!("x: {}, y: {}", &map_pos.x, &map_pos.y)
             } else {
-                name.0.clone()
+                // we don't query for the health component in positions,
+                // since we might support other tooltips also
+                if let Ok(health) = ecs
+                    .entry_ref(*ent).unwrap().get_component::<Health>()
+                {
+                    format!("{} : {} hp", &name.0, health.current)
+                } else {
+                    name.0.clone()
+                }
             };
 
             draw_batch.print(screen_pos, display);

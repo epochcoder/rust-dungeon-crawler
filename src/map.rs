@@ -7,6 +7,7 @@ const NUM_TILES: usize = (SCREEN_HEIGHT * SCREEN_WIDTH) as usize;
 pub enum TileType {
     Wall,
     Floor,
+    Test,
 }
 
 pub struct Map {
@@ -54,7 +55,8 @@ impl Map {
         if let Some(idx) = self.try_idx(point) {
             return match self.tiles[idx] {
                 TileType::Wall => false,
-                TileType::Floor => true,
+                TileType::Floor | TileType::Test => true,
+
             };
         }
 

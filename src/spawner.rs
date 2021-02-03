@@ -14,6 +14,7 @@ pub fn spawn_player(ecs: &mut World, camera: &mut Camera, position: Point, fov: 
             current: 10,
             max: 10,
         },
+        Name("Player".to_string()),
         FieldOfView::new(fov),
     ));
 }

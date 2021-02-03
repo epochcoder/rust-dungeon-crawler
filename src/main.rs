@@ -87,6 +87,7 @@ impl State {
         // initial turn state resource
         self.resources.insert(TurnState::AwaitingInput);
         self.resources.insert(map_builder.map);
+        self.resources.insert(map_builder.theme);
         self.resources.insert(camera);
     }
 
