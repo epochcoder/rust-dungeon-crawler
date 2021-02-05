@@ -14,6 +14,7 @@ use rooms::RoomsArchitect;
 use drunkard::DrunkardArchitect;
 use themes::DungeonTheme;
 use themes::ForestTheme;
+use themes::BeachTheme;
 
 // legion resources have to be thread safe (thus constrained by send + sync)
 pub trait MapTheme: Send + Sync {
@@ -63,8 +64,9 @@ impl MapBuilder {
         apply_prefab(&mut builder, rng, &FORTRESS);
         apply_prefab(&mut builder, rng, &SPIRALL);
 
-        builder.theme = match rng.range(0, 2) {
+        builder.theme = match rng.range(0, 3) {
             0 => DungeonTheme::new(),
+            1 => BeachTheme::new(),
             _ => ForestTheme::new(),
         };
 
